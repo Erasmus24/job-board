@@ -1,6 +1,7 @@
-import { getJob } from "lib/data";
+import { getJob, alreadyApplied } from "lib/data";
 import prisma from "lib/prisma";
 import Link from "next/link";
+import { getSession } from "next-auth/react";
 
 export default function Job({ job }) {
   return (
@@ -38,23 +39,42 @@ export default function Job({ job }) {
         </div>
       </div>
       <div className="mt-20 flex justify-center ">
-        <Link href={`/job/${job.id}/apply`}>
-          <button className=" border  px-8 py-2 mt-0  font-bold rounded-full bg-black text-white ">
-            Apply to this job
-          </button>
-        </Link>
+        {applied ? (
+          <div className="mt-20 flex justify-center ">
+            <Link href={`/dashboard`}>
+              <button className=" border  px-8 py-2 mt-0  font-bold rounded-full bg-black text-white ">
+                You already applied!
+              </button>
+            </Link>
+          </div>
+        ) : (
+          <div className="mt-20 flex justify-center ">
+            <Link href={`/job/${job.id}/apply`}>
+              <button className=" border  px-8 py-2 mt-0  font-bold rounded-full bg-black text-white ">
+                Apply to this job
+              </button>
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 export async function getServerSideProps(context) {
+  const session = await getSession(context);
   let job = await getJob(context.params.id, prisma);
   job = JSON.parse(JSON.stringify(job));
+  const applied = await alreadyApplied(
+    session.user.id,
+    context.params.id,
+    prisma
+  );
 
   return {
     props: {
       job,
+      applied,
     },
   };
 }
